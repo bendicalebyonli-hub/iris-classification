@@ -189,16 +189,19 @@ else:
                 "Outcome": np.random.choice([0, 1], n, p=[0.65, 0.35])
             })
         
-        # Physiological zero-imputation
+        # Physiological zero-imputation without NaNs
         zero_cols = ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]
         for c in zero_cols:
-            df_diab[c] = df_diab[c].replace(0, np.nan)
-            df_diab[c].fillna(df_diab[c].median(), inplace=True)
+            med_val = float(df_diab[df_diab[c] > 0][c].median())
+            df_diab[c] = df_diab[c].replace(0, med_val)
+        df_diab = df_diab.fillna(df_diab.median())
             
         return df_diab
 
     @st.cache_resource
     def train_diabetes_models(X_tr, y_tr):
+        # Guarantee X_tr is 100% clean and free of NaNs
+        X_tr = np.nan_to_num(X_tr, nan=np.nanmedian(X_tr, axis=0))
         scaler_d = StandardScaler()
         X_tr_sc = scaler_d.fit_transform(X_tr)
         models = {
